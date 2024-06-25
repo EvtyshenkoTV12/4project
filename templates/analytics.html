@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Аналітика гуртожитку</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Аналітика гуртожитку</h1>
+
+        <div class="row">
+            <div class="col-md-12">
+                <h2>Заповненість кімнат</h2>
+                <img src="{{ url_for('static', filename='charts/room_occupancy_rate.png') }}" alt="Заповненість кімнат">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <h2>Розподіл студентів за курсами</h2>
+                <img src="{{ url_for('static', filename='charts/course_distribution.png') }}" alt="Розподіл студентів за курсами">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <h2>Розподіл студентів за спеціальностями</h2>
+                <img src="{{ url_for('static', filename='charts/specialty_distribution.png') }}" alt="Розподіл студентів за спеціальностями">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <h2>Розподіл кімнат за гендером</h2>
+                <img src="{{ url_for('static', filename='charts/gender_distribution.png') }}" alt="Розподіл кімнат за гендером">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <h2>Розподіл студентів за гендером</h2>
+                <img src="{{ url_for('static', filename='charts/student_gender_distribution.png') }}" alt="Розподіл студентів за гендером">
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

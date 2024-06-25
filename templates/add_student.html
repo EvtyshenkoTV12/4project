@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Додати студента</title>
+</head>
+<body>
+    <h1>Додати студента</h1>
+
+    <!-- Перевірка та відображення повідомлення про помилку -->
+    {% if error_message %}
+        <p style="color: red;">{{ error_message }}</p>
+    {% endif %}
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.first_name.label }}<br>
+            {{ form.first_name(size=32) }}
+        </p>
+        <p>
+            {{ form.last_name.label }}<br>
+            {{ form.last_name(size=32) }}
+        </p>
+        <p>
+            {{ form.course.label }}<br>
+            {{ form.course }}
+        </p>
+        <p>
+            {{ form.specialty.label }}<br>
+            {{ form.specialty(size=32) }}
+        </p>
+        <p>
+            {{ form.room_number.label }}<br>
+            {{ form.room_number }}
+        </p>
+        <p>
+            {{ form.gender.label }}<br>
+            {{ form.gender }}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+</body>
+</html>

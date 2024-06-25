@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Гуртожиток</title>
+    <style>
+        .container {
+            margin: 0 auto;
+            padding: 20px;
+            max-width: 1400px;
+        }
+        .rooms-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .room {
+            border: 1px solid #ddd;
+            padding: 10px;
+            width: 300px;
+            cursor: pointer;
+        }
+        .student {
+            margin: 5px;
+            padding: 5px;
+        }
+        .student a {
+            text-decoration: none;
+            color: #000;
+        }
+        .student a:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Система гуртожитку</h1>
+        <a href="{{ url_for('add_student') }}" class="btn btn-primary">Додати студента</a>
+        <a href="{{ url_for('add_room') }}" class="btn btn-primary">Додати кімнату</a>
+        <a href="{{ url_for('analytics') }}" class="btn btn-secondary">Переглянути аналітику</a>
+    
+        <div class="filter-container mt-4 p-3 border rounded">
+            <form method="GET" action="{{ url_for('index') }}" class="form-inline">
+                <div class="form-group mr-2">
+                    <input type="text" id="search_filter" name="search_filter" placeholder="Кімната або ім'я" class="form-control">
+                </div>
+                <div class="form-group mr-2">
+                    <select id="floor_filter" name="floor_filter" class="form-control">
+                        <option value="">Усі поверхи</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                </div>        
+                <div class="form-group mr-3">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" id="free_first" name="free_first" class="custom-control-input">
+                        <label for="free_first" class="custom-control-label">Спочатку вільні</label>
+                    </div>
+                </div>
+    
+                <div class="form-group mr-3">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" id="full_first" name="full_first" class="custom-control-input">
+                        <label for="full_first" class="custom-control-label">Спочатку повні</label>
+                    </div>
+                </div>
+    
+                <div class="form-group mr-3">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" id="hide_full" name="hide_full" class="custom-control-input">
+                        <label for="hide_full" class="custom-control-label">Приховати заповнені</label>
+                    </div>
+                </div>
+    
+                <div class="form-group mr-3">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" id="hide_empty" name="hide_empty" class="custom-control-input">
+                        <label for="hide_empty" class="custom-control-label">Приховати пусті</label>
+                    </div>
+                </div>
+    
+                <button type="submit" class="btn btn-info mt-2">Фільтрувати</button>
+            </form>
+        </div>     
+        <div class="rooms-container">
+            {% for room in rooms %}
+            <div class="room" onclick="openEditModal('{{ room.id }}', '{{ room.room_type }}', '{{ room.floor }}', '{{ room.capacity }}', '{{ room.gender }}', '{{ room.room_number }}')">
+                <h2>Кімната №{{ room.room_number }} ({{ room.room_type }})</h2>
+                <p>Гендер: {{ 'Чоловіча' if room.gender == 'male' else 'Жіноча' }}</p>
+                <p>Поверх: {{ room.floor }}</p>
+                <p>Місткість: {{ room.capacity }}</p>
+                <ul>
+                    {% for student in room.students %}
+                    <li class="student">
+                        <a href="#" onclick="event.stopPropagation(); openStudentModal('{{ student.id }}', '{{ student.first_name }}', '{{ student.last_name }}', '{{ student.course }}', '{{ student.specialty }}', '{{ room.room_number }}', '{{ student.gender }}')">
+                            {{ student.first_name }} {{ student.last_name }} - Курс: {{ student.course }}
+                        </a>
+                    </li>                
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Модальне вікно для редагування кімнати -->
+        <div class="modal fade" id="editRoomModal" tabindex="-1" role="dialog" aria-labelledby="editRoomModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editRoomModalLabel">Редагувати кімнату</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form id="editRoomForm">
+                        <div class="modal-body">
+                            <input type="hidden" id="editRoomId">
+                            <div class="form-group">
+                                <label for="editRoomType">Тип кімнати</label>
+                                <input type="text" class="form-control" id="editRoomType">
+                            </div>
+                            <div class="form-group">
+                                <label for="editFloor">Поверх</label>
+                                <input type="number" class="form-control" id="editFloor">
+                            </div>
+                            <div class="form-group">
+                                <label for="editCapacity">Місткість</label>
+                                <input type="number" class="form-control" id="editCapacity">
+                            </div>
+                            <div class="form-group">
+                                <label for="editGender">Гендер</label>
+                                <select class="form-control" id="editGender">
+                                    <option value="male">Чоловіча</option>
+                                    <option value="female">Жіноча</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="studentsList">Студенти</label>
+                                <ul id="studentsList"></ul>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрити</button>
+                            <button type="submit" class="btn btn-primary">Зберегти зміни</button>
+                            <button type="button" class="btn btn-danger" onclick="deleteRoom()">Видалити</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальне вікно для редагування студента -->
+        <div class="modal fade" id="editStudentModal" tabindex="-1" role="dialog" aria-labelledby="editStudentModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editStudentModalLabel">Редагувати студента</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form id="editStudentForm">
+                        <div class="modal-body">
+                            <input type="hidden" id="editStudentId">
+                            <div class="form-group">
+                                <label for="editFirstName">Ім'я</label>
+                                <input type="text" class="form-control" id="editFirstName" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label for="editLastName">Прізвище</label>
+                                <input type="text" class="form-control" id="editLastName" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label for="editCourse">Курс</label>
+                                <input type="number" class="form-control" id="editCourse">
+                            </div>
+                            <div class="form-group">
+                                <label for="editSpecialty">Спеціальність</label>
+                                <input type="text" class="form-control" id="editSpecialty">
+                            </div>
+                            <div class="form-group">
+                                <label for="editRoomNumberStudent">Номер кімнати</label>
+                                <input type="number" class="form-control" id="editRoomNumberStudent">
+                            </div>
+                            <input type="hidden" id="editGenderStudent">
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрити</button>
+                            <button type="submit" class="btn btn-primary">Зберегти зміни</button>
+                            <button type="button" class="btn btn-danger" onclick="deleteStudent()">Видалити</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function openEditModal(roomId, roomType, floor, capacity, gender, roomNumber) {
+        console.log("Opening room modal with data:", {
+            roomId, roomType, floor, capacity, gender, roomNumber
+        });
+        $('#editRoomId').val(roomId);
+        $('#editRoomType').val(roomType);
+        $('#editFloor').val(floor);
+        $('#editCapacity').val(capacity);
+        $('#editGender').val(gender);
+
+        $('#studentsList').empty();
+
+        $.ajax({
+            url: '/room_students/' + roomId,
+            method: 'GET',
+            success: function(response) {
+                console.log("Room students response:", response);
+                response.students.forEach(function(student) {
+                    $('#studentsList').append('<li><a href="#" onclick="openStudentModal(\'' + student.id + '\', \'' + student.first_name + '\', \'' + student.last_name + '\', \'' + student.course + '\', \'' + student.specialty + '\', \'' + roomNumber + '\', \'' + student.gender + '\')">' + student.first_name + ' ' + student.last_name + '</a></li>');
+                });
+                $('#editRoomModal').modal('show');
+            },
+            error: function(xhr, status, error) {
+                console.error("Помилка отримання даних студентів:", xhr.responseText);
+                alert('Не вдалося отримати дані студентів. Спробуйте ще раз.');
+            }
+        });
+    }
+
+    function openStudentModal(studentId, firstName, lastName, course, specialty, roomNumber, gender) {
+        console.log("Opening student modal with data:", {
+            studentId, firstName, lastName, course, specialty, roomNumber, gender
+        });
+        $('#editStudentId').val(studentId);
+        $('#editFirstName').val(firstName);
+        $('#editLastName').val(lastName);
+        $('#editCourse').val(course);
+        $('#editSpecialty').val(specialty);
+        $('#editRoomNumberStudent').val(roomNumber);
+        $('#editGenderStudent').val(gender);
+        $('#editStudentModal').modal('show');
+    }
+
+    $('#editRoomForm').on('submit', function(e) {
+        e.preventDefault();
+        const roomId = $('#editRoomId').val();
+        const roomType = $('#editRoomType').val();
+        const floor = parseInt($('#editFloor').val());
+        const capacity = parseInt($('#editCapacity').val());
+        const gender = $('#editGender').val();
+
+        $.ajax({
+            url: '/update_room/' + roomId,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ roomType, floor, capacity, gender }),
+            success: function() {
+                $('#editRoomModal').modal('hide');
+                location.reload();
+            },
+            error: function(xhr, status, error) {
+                console.error("Помилка оновлення:", xhr.responseText);
+                let response = JSON.parse(xhr.responseText);
+                let message = "Не вдалося оновити кімнату. Спробуйте ще раз.";
+                if (response.error.includes("Місткість")) {
+                    message = "Місткість не може бути менша за кількість студентів у кімнаті.";
+                } else if (response.error.includes("Кімната не знайдена")) {
+                    message = "Кімната не знайдена. Можливо, вона вже була видалена.";
+                } else if (response.error.includes("Не вдалося оновити дані кімнати")) {
+                    message = "Помилка під час збереження змін. Спробуйте ще раз.";
+                }
+                alert(message);
+            }
+        });
+    });
+
+    $('#editStudentForm').on('submit', function(e) {
+        e.preventDefault();
+        const studentId = $('#editStudentId').val();
+        const course = $('#editCourse').val();
+        const specialty = $('#editSpecialty').val();
+        const roomNumber = $('#editRoomNumberStudent').val();
+        const gender = $('#editGenderStudent').val();
+
+        $.ajax({
+            url: '/update_student/' + studentId,
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ course, specialty, roomNumber, gender }),
+            success: function() {
+                $('#editStudentModal').modal('hide');
+                location.reload();
+            },
+            error: function(xhr, status, error) {
+                console.error("Помилка оновлення студента:", xhr.responseText);
+                let response = JSON.parse(xhr.responseText);
+                let message = "Не вдалося оновити студента. Спробуйте ще раз.";
+                if (response.error.includes("Кімната не знайдена")) {
+                    message = "Кімната не знайдена. Можливо, вона вже була видалена.";
+                } else if (response.error.includes("Місткість")) {
+                    message = "Місткість кімнати перевищена.";
+                } else if (response.error.includes("Гендер не відповідає")) {
+                    message = "Гендер студента не відповідає гендеру кімнати.";
+                } else if (response.error.includes("Не вдалося оновити дані студента")) {
+                    message = "Помилка під час збереження змін. Спробуйте ще раз.";
+                }
+                alert(message);
+            }
+        });
+    });
+
+    function deleteRoom() {
+        const roomId = $('#editRoomId').val();
+        if (confirm('Ви впевнені, що хочете видалити цю кімнату?')) {
+            $.ajax({
+                url: '/delete_room/' + roomId,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({}),
+                success: function(response) {
+                    console.log("Видалення вдале:", response);
+                    $('#editRoomModal').modal('hide');
+                    location.reload();
+                },
+                error: function(xhr, status, error) {
+                    console.error("Помилка видалення:", xhr.responseText);
+                    let response = JSON.parse(xhr.responseText);
+                    let message = "Не вдалося видалити кімнату. Спробуйте ще раз.";
+                    if (response.error.includes("студенти")) {
+                        message = "Не вдалося видалити кімнату, оскільки в ній є студенти.";
+                    } else if (response.error.includes("не знайдена")) {
+                        message = "Кімната не знайдена. Можливо, вона вже була видалена.";
+                    }
+                    alert(message);
+                }
+            });
+        }
+    }
+
+    function deleteStudent() {
+        const studentId = $('#editStudentId').val();
+        if (confirm('Ви впевнені, що хочете видалити цього студента?')) {
+            $.ajax({
+                url: '/delete_student/' + studentId,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({}),
+                success: function(response) {
+                    console.log("Видалення вдале:", response);
+                    $('#editStudentModal').modal('hide');
+                    location.reload();
+                },
+                error: function(xhr, status, error) {
+                    console.error("Помилка видалення студента:", xhr.responseText);
+                    let response = JSON.parse(xhr.responseText);
+                    let message = "Не вдалося видалити студента. Спробуйте ще раз.";
+                    if (response.error.includes("не знайдено")) {
+                        message = "Студент не знайдений. Можливо, він вже був видалений.";
+                    }
+                    alert(message);
+                }
+            });
+        }
+    }
+    </script>
+</body>
+</html>
